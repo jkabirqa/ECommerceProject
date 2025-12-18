@@ -1,7 +1,4 @@
-def COLOR_MAP = [
-    'SUCCESS': 'good', 
-    'FAILURE': 'danger',
-]
+
 pipeline {
 	agent any
 	tools {
@@ -12,7 +9,7 @@ pipeline {
 	stages {
 	    stage('Fetch code') {
             steps {
-               git branch: 'cicd', url: 'https://github.com/jkabirqa/aheeva-project.git'
+               git branch: 'cicd-selenium', url: 'https://github.com/jkabirqa/ECommerceProject.git'
             }
 
 	    }
@@ -23,12 +20,7 @@ pipeline {
 	           sh 'mvn install -DskipTests'
 	        }
 
-	        post {
-	           success {
-	              echo 'Now Archiving it...'
-	              archiveArtifacts artifacts: '**/target/*.war'
-	           }
-	        }
+	     
 	    }
 
 	    stage('UNIT TEST') {
@@ -36,38 +28,8 @@ pipeline {
                 sh 'mvn test'
             }
         }
+        
 
-        stage('Checkstyle Analysis') {
-            steps{
-                sh 'mvn checkstyle:checkstyle'
-            }
-        }
-
-        stage("Sonar Code Analysis") {
-        	environment {
-                scannerHome = tool 'sonar6.2'
-            }
-            steps {
-              withSonarQubeEnv('sonarserver') {
-                sh '''${scannerHome}/bin/sonar-scanner -Dsonar.projectKey=vprofile \
-                   -Dsonar.projectName=aheeva \
-                   -Dsonar.projectVersion=1.0 \
-                   -Dsonar.sources=src/ \
-                   -Dsonar.java.binaries=target/test-classes/com/aheeva/account/controllerTest/ \
-                   -Dsonar.junit.reportsPath=target/surefire-reports/ \
-                   -Dsonar.jacoco.reportsPath=target/jacoco.exec \
-                   -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml'''
-              }
-            }
-        }
-
-        stage("Quality Gate") {
-            steps {
-              timeout(time: 1, unit: 'HOURS') {
-                waitForQualityGate abortPipeline: true
-              }
-            }
-          }
 
           /* ==== UI TESTING ==== */ 
        stage('UI-Test -Selenium'){
@@ -77,29 +39,11 @@ pipeline {
           post{
             always{
                junit '**/ui-tests/target/surefire-reports/*.xml'
+               archiveArtifacts 'target/*.jar'
             }
           }
        }
 
-	     stage("UploadArtifact"){
-            steps{
-                nexusArtifactUploader(
-                  nexusVersion: 'nexus3',
-                  protocol: 'http',
-                  nexusUrl: '172.31.25.14:8081',
-                  groupId: 'QA',
-                  version: "${env.BUILD_ID}-${env.BUILD_TIMESTAMP}",
-                  repository: 'aheeva-project',
-                  credentialsId: 'nexuslogin',
-                  artifacts: [
-                    [artifactId: 'aheevaapp',
-                     classifier: '',
-                     file: 'target/aheeva-v2.war',
-                     type: 'war']
-                  ]
-                )
-            }
-        }
 
 
 	}
