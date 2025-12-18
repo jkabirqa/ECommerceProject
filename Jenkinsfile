@@ -10,13 +10,6 @@ pipeline {
 	}
 
 	stages {
-
-		stage('test slack'){
-			steps{
-				sh 'NotARealCommand'
-
-			}
-		}
 	    stage('Fetch code') {
             steps {
                git branch: 'cicd', url: 'https://github.com/jkabirqa/aheeva-project.git'
